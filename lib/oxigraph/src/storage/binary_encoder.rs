@@ -4,6 +4,7 @@ use crate::storage::small_string::SmallString;
 use oxsdatatypes::*;
 use std::io::Read;
 use std::mem::size_of;
+use std::sync::Arc;
 
 #[cfg(all(not(target_family = "wasm"), feature = "rocksdb"))]
 pub const LATEST_STORAGE_VERSION: u64 = 1;
@@ -14,7 +15,7 @@ pub const WRITTEN_TERM_MAX_SIZE: usize = size_of::<u8>() + 2 * size_of::<StrHash
 // 8-15: blank nodes
 // 16-47: literals
 // 48-55: triples
-// 56-64: future use
+// 56-64: literal again
 // 64-127: default named node prefixes
 // 128-255: custom named node prefixes
 const TYPE_NAMED_NODE_ID: u8 = 1;
@@ -47,6 +48,22 @@ const TYPE_DURATION_LITERAL: u8 = 42;
 const TYPE_YEAR_MONTH_DURATION_LITERAL: u8 = 43;
 const TYPE_DAY_TIME_DURATION_LITERAL: u8 = 44;
 const TYPE_TRIPLE: u8 = 48;
+#[cfg(feature = "rdf-12")]
+const TYPE_LTR_SMALL_SMALL_DIR_LANG_STRING_LITERAL: u8 = 56;
+#[cfg(feature = "rdf-12")]
+const TYPE_LTR_SMALL_BIG_DIR_LANG_STRING_LITERAL: u8 = 57;
+#[cfg(feature = "rdf-12")]
+const TYPE_LTR_BIG_SMALL_DIR_LANG_STRING_LITERAL: u8 = 58;
+#[cfg(feature = "rdf-12")]
+const TYPE_LTR_BIG_BIG_DIR_LANG_STRING_LITERAL: u8 = 59;
+#[cfg(feature = "rdf-12")]
+const TYPE_RTL_SMALL_SMALL_DIR_LANG_STRING_LITERAL: u8 = 60;
+#[cfg(feature = "rdf-12")]
+const TYPE_RTL_SMALL_BIG_DIR_LANG_STRING_LITERAL: u8 = 61;
+#[cfg(feature = "rdf-12")]
+const TYPE_RTL_BIG_SMALL_DIR_LANG_STRING_LITERAL: u8 = 62;
+#[cfg(feature = "rdf-12")]
+const TYPE_RTL_BIG_BIG_DIR_LANG_STRING_LITERAL: u8 = 63;
 
 #[derive(Clone, Copy)]
 pub enum QuadEncoding {
@@ -275,6 +292,102 @@ impl<R: Read> TermReader for R {
                     language_id: StrHash::from_be_bytes(language_buffer),
                 })
             }
+            #[cfg(feature = "rdf-12")]
+            TYPE_RTL_SMALL_SMALL_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::RtlSmallSmallDirLangStringLiteral {
+                    value: SmallString::from_be_bytes(value_buffer)
+                        .map_err(CorruptionError::new)?,
+                    language: SmallString::from_be_bytes(language_buffer)
+                        .map_err(CorruptionError::new)?,
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_RTL_SMALL_BIG_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::RtlSmallBigDirLangStringLiteral {
+                    value: SmallString::from_be_bytes(value_buffer)
+                        .map_err(CorruptionError::new)?,
+                    language_id: StrHash::from_be_bytes(language_buffer),
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_RTL_BIG_SMALL_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::RtlBigSmallDirLangStringLiteral {
+                    value_id: StrHash::from_be_bytes(value_buffer),
+                    language: SmallString::from_be_bytes(language_buffer)
+                        .map_err(CorruptionError::new)?,
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_RTL_BIG_BIG_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::RtlBigBigDirLangStringLiteral {
+                    value_id: StrHash::from_be_bytes(value_buffer),
+                    language_id: StrHash::from_be_bytes(language_buffer),
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_LTR_SMALL_SMALL_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::LtrSmallSmallDirLangStringLiteral {
+                    value: SmallString::from_be_bytes(value_buffer)
+                        .map_err(CorruptionError::new)?,
+                    language: SmallString::from_be_bytes(language_buffer)
+                        .map_err(CorruptionError::new)?,
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_LTR_SMALL_BIG_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::LtrSmallBigDirLangStringLiteral {
+                    value: SmallString::from_be_bytes(value_buffer)
+                        .map_err(CorruptionError::new)?,
+                    language_id: StrHash::from_be_bytes(language_buffer),
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_LTR_BIG_SMALL_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::LtrBigSmallDirLangStringLiteral {
+                    value_id: StrHash::from_be_bytes(value_buffer),
+                    language: SmallString::from_be_bytes(language_buffer)
+                        .map_err(CorruptionError::new)?,
+                })
+            }
+            #[cfg(feature = "rdf-12")]
+            TYPE_LTR_BIG_BIG_DIR_LANG_STRING_LITERAL => {
+                let mut language_buffer = [0; 16];
+                self.read_exact(&mut language_buffer)?;
+                let mut value_buffer = [0; 16];
+                self.read_exact(&mut value_buffer)?;
+                Ok(EncodedTerm::LtrBigBigDirLangStringLiteral {
+                    value_id: StrHash::from_be_bytes(value_buffer),
+                    language_id: StrHash::from_be_bytes(language_buffer),
+                })
+            }
             TYPE_SMALL_TYPED_LITERAL => {
                 let mut datatype_buffer = [0; 16];
                 self.read_exact(&mut datatype_buffer)?;
@@ -310,89 +423,100 @@ impl<R: Read> TermReader for R {
                     value_id: StrHash::from_be_bytes(buffer),
                 })
             }
-            TYPE_BOOLEAN_LITERAL_TRUE => Ok(true.into()),
-            TYPE_BOOLEAN_LITERAL_FALSE => Ok(false.into()),
+            TYPE_BOOLEAN_LITERAL_TRUE => Ok(EncodedTerm::BooleanLiteral(true.into())),
+            TYPE_BOOLEAN_LITERAL_FALSE => Ok(EncodedTerm::BooleanLiteral(false.into())),
             TYPE_FLOAT_LITERAL => {
                 let mut buffer = [0; 4];
                 self.read_exact(&mut buffer)?;
-                Ok(Float::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::FloatLiteral(Float::from_be_bytes(buffer)))
             }
             TYPE_DOUBLE_LITERAL => {
                 let mut buffer = [0; 8];
                 self.read_exact(&mut buffer)?;
-                Ok(Double::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DoubleLiteral(Double::from_be_bytes(buffer)))
             }
             TYPE_INTEGER_LITERAL => {
                 let mut buffer = [0; 8];
                 self.read_exact(&mut buffer)?;
-                Ok(Integer::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::IntegerLiteral(Integer::from_be_bytes(buffer)))
             }
             TYPE_DECIMAL_LITERAL => {
                 let mut buffer = [0; 16];
                 self.read_exact(&mut buffer)?;
-                Ok(Decimal::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DecimalLiteral(Decimal::from_be_bytes(buffer)))
             }
             TYPE_DATE_TIME_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(DateTime::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DateTimeLiteral(DateTime::from_be_bytes(
+                    buffer,
+                )))
             }
             TYPE_TIME_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(Time::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::TimeLiteral(Time::from_be_bytes(buffer)))
             }
             TYPE_DATE_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(Date::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DateLiteral(Date::from_be_bytes(buffer)))
             }
             TYPE_G_YEAR_MONTH_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(GYearMonth::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::GYearMonthLiteral(GYearMonth::from_be_bytes(
+                    buffer,
+                )))
             }
             TYPE_G_YEAR_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(GYear::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::GYearLiteral(GYear::from_be_bytes(buffer)))
             }
             TYPE_G_MONTH_DAY_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(GMonthDay::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::GMonthDayLiteral(GMonthDay::from_be_bytes(
+                    buffer,
+                )))
             }
             TYPE_G_DAY_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(GDay::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::GDayLiteral(GDay::from_be_bytes(buffer)))
             }
             TYPE_G_MONTH_LITERAL => {
                 let mut buffer = [0; 18];
                 self.read_exact(&mut buffer)?;
-                Ok(GMonth::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::GMonthLiteral(GMonth::from_be_bytes(buffer)))
             }
             TYPE_DURATION_LITERAL => {
                 let mut buffer = [0; 24];
                 self.read_exact(&mut buffer)?;
-                Ok(Duration::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DurationLiteral(Duration::from_be_bytes(
+                    buffer,
+                )))
             }
             TYPE_YEAR_MONTH_DURATION_LITERAL => {
                 let mut buffer = [0; 8];
                 self.read_exact(&mut buffer)?;
-                Ok(YearMonthDuration::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::YearMonthDurationLiteral(
+                    YearMonthDuration::from_be_bytes(buffer),
+                ))
             }
             TYPE_DAY_TIME_DURATION_LITERAL => {
                 let mut buffer = [0; 16];
                 self.read_exact(&mut buffer)?;
-                Ok(DayTimeDuration::from_be_bytes(buffer).into())
+                Ok(EncodedTerm::DayTimeDurationLiteral(
+                    DayTimeDuration::from_be_bytes(buffer),
+                ))
             }
-            TYPE_TRIPLE => Ok(EncodedTriple {
+            TYPE_TRIPLE => Ok(EncodedTerm::Triple(Arc::new(EncodedTriple {
                 subject: self.read_term()?,
                 predicate: self.read_term()?,
                 object: self.read_term()?,
-            }
-            .into()),
+            }))),
             _ => Err(CorruptionError::msg("the term buffer has an invalid type id").into()),
         }
     }
@@ -540,6 +664,60 @@ pub fn write_term(sink: &mut Vec<u8>, term: &EncodedTerm) {
             language_id,
         } => {
             sink.push(TYPE_BIG_BIG_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language_id.to_be_bytes());
+            sink.extend_from_slice(&value_id.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::LtrSmallSmallDirLangStringLiteral { value, language } => {
+            sink.push(TYPE_LTR_SMALL_SMALL_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language.to_be_bytes());
+            sink.extend_from_slice(&value.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::LtrSmallBigDirLangStringLiteral { value, language_id } => {
+            sink.push(TYPE_LTR_SMALL_BIG_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language_id.to_be_bytes());
+            sink.extend_from_slice(&value.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::LtrBigSmallDirLangStringLiteral { value_id, language } => {
+            sink.push(TYPE_LTR_BIG_SMALL_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language.to_be_bytes());
+            sink.extend_from_slice(&value_id.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::LtrBigBigDirLangStringLiteral {
+            value_id,
+            language_id,
+        } => {
+            sink.push(TYPE_LTR_BIG_BIG_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language_id.to_be_bytes());
+            sink.extend_from_slice(&value_id.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::RtlSmallSmallDirLangStringLiteral { value, language } => {
+            sink.push(TYPE_RTL_SMALL_SMALL_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language.to_be_bytes());
+            sink.extend_from_slice(&value.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::RtlSmallBigDirLangStringLiteral { value, language_id } => {
+            sink.push(TYPE_RTL_SMALL_BIG_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language_id.to_be_bytes());
+            sink.extend_from_slice(&value.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::RtlBigSmallDirLangStringLiteral { value_id, language } => {
+            sink.push(TYPE_RTL_BIG_SMALL_DIR_LANG_STRING_LITERAL);
+            sink.extend_from_slice(&language.to_be_bytes());
+            sink.extend_from_slice(&value_id.to_be_bytes());
+        }
+        #[cfg(feature = "rdf-12")]
+        EncodedTerm::RtlBigBigDirLangStringLiteral {
+            value_id,
+            language_id,
+        } => {
+            sink.push(TYPE_RTL_BIG_BIG_DIR_LANG_STRING_LITERAL);
             sink.extend_from_slice(&language_id.to_be_bytes());
             sink.extend_from_slice(&value_id.to_be_bytes());
         }
@@ -701,6 +879,62 @@ mod tests {
             Literal::new_language_tagged_literal_unchecked(
                 "foo-big-literal-thisisaverylargelanguagetaggedstringliteral",
                 "fr-FR-Latn-x-foo-bar-baz-bat-aaaa-bbbb-cccc",
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-fr",
+                "fr",
+                BaseDirection::Ltr,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-fr-literal-thisisaverylargelanguagetaggedstringliteral",
+                "fr",
+                BaseDirection::Ltr,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-big",
+                "fr-FR-Latn-x-foo-bar-baz-bat-aaaa-bbbb-cccc",
+                BaseDirection::Ltr,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-big-literal-thisisaverylargelanguagetaggedstringliteral",
+                "fr-FR-Latn-x-foo-bar-baz-bat-aaaa-bbbb-cccc",
+                BaseDirection::Ltr,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-fr",
+                "fr",
+                BaseDirection::Rtl,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-fr-literal-thisisaverylargelanguagetaggedstringliteral",
+                "fr",
+                BaseDirection::Rtl,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-big",
+                "fr-FR-Latn-x-foo-bar-baz-bat-aaaa-bbbb-cccc",
+                BaseDirection::Rtl,
+            )
+            .into(),
+            #[cfg(feature = "rdf-12")]
+            Literal::new_directional_language_tagged_literal_unchecked(
+                "foo-big-literal-thisisaverylargelanguagetaggedstringliteral",
+                "fr-FR-Latn-x-foo-bar-baz-bat-aaaa-bbbb-cccc",
+                BaseDirection::Rtl,
             )
             .into(),
             Literal::new_typed_literal("-1.32", xsd::DECIMAL).into(),
